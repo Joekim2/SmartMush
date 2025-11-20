@@ -1,108 +1,42 @@
-# SmartMush - 🍄 Smart Mushroom Farm Monitoring System
+# 🍄 SmartMush: AI-Powered Farm Monitoring System
 
-The **Smart Mushroom Farm Monitoring System** is an AI-powered IoT project designed to monitor and optimize environmental conditions for mushroom cultivation.  
-It uses simulated or real sensor data (temperature, humidity, and CO₂) to predict whether the farm environment is **optimal** or **suboptimal** for growth.  
-The system can also be expanded to automatically control devices like fans, humidifiers, or heaters.
+![Python](https://img.shields.io/badge/Python-3.9-blue)
+![Streamlit](https://img.shields.io/badge/Streamlit-1.50-FF4B4B)
+![Docker](https://img.shields.io/badge/Docker-Enabled-2496ED)
+![Build Status](https://img.shields.io/badge/Build-Passing-brightgreen)
 
----
-
-## 🚀 Features
-
-- Real-time monitoring of temperature, humidity, and CO₂ levels  
-- AI-based condition prediction (Optimal / Suboptimal)  
-- Simple web dashboard using **Streamlit**  
-- Optional hardware integration using **Arduino** or **Raspberry Pi**  
-- Expandable to include automation and alert systems  
+**SmartMush** is an intelligent IoT dashboard designed to optimize the growth of **Oyster Mushrooms**. It uses a Random Forest Machine Learning model to analyze environmental sensor data (Temperature, Humidity, CO₂) and provides real-time feedback to farmers.
 
 ---
 
-## 🧠 Tech Stack
+## 🚀 Key Features
 
-- **Python** – Core logic, simulation, and machine learning  
-- **scikit-learn** – AI model training and prediction  
-- **pandas** – Data handling and CSV storage  
-- **Streamlit** – Real-time dashboard visualization  
-- **joblib** – Model saving and loading  
-- *(Optional)* Arduino / Raspberry Pi for real sensor input  
-
----
-
-## 📁 Project Structure
-
-```
-smart-mushroom-farm/
-│
-├── mushroom_data.csv              # Simulated dataset
-├── simulate_data.py               # Script to generate fake sensor data
-├── train_model.py                 # Trains the AI model
-├── dashboard.py                   # Streamlit app for real-time monitoring
-├── mushroom_ai_model.pkl          # Trained AI model (auto-generated)
-└── README.md                      # Project documentation
-```
+* **🧠 AI-Driven Predictions:** Instantly classifies growth conditions as *Optimal* or *Suboptimal*.
+* **📊 Interactive Dashboard:** Built with Streamlit, featuring live Lottie animations and Plotly interactive charts.
+* **🌗 Dark/Light Mode:** Fully functional theme toggle for day/night monitoring.
+* **🐋 Dockerized:** Containerized application for consistent deployment across any device.
+* **🧪 Robust Testing:** Integrated unit tests to ensure model reliability.
 
 ---
 
-## ⚙️ Installation and Setup
+## 🛠️ Tech Stack
 
-### 1. Clone the repository
-```bash
-git clone https://github.com/yourusername/SmartMush.git
-cd SmartMush
-```
-
-### 2. Install dependencies
-```bash
-pip install -r requirements.txt
-```
-
-*(Create a `requirements.txt` with the following:)*
-```
-pandas
-scikit-learn
-streamlit
-joblib
-```
-
-### 3. Generate simulated sensor data
-```bash
-python simulate_data.py
-```
-
-### 4. Train the AI model
-```bash
-python train_model.py
-```
-
-### 5. Run the dashboard
-```bash
-streamlit run dashboard.py
-```
+* **Frontend:** Streamlit (Python)
+* **ML Engine:** Scikit-learn (Random Forest Classifier)
+* **Visualization:** Plotly Interactive Charts
+* **Deployment:** Docker
+* **Data Handling:** Pandas & NumPy
 
 ---
 
-## 📊 Dashboard Preview
+## 📂 Project Structure
 
-The dashboard allows you to:
-- Adjust temperature, humidity, and CO₂ levels with sliders  
-- See instant AI predictions  
-- Get visual feedback on farm conditions  
-
-Example output:
-```
-Model Accuracy: 97.5%
-✅ Conditions are ideal for mushroom growth!
-```
-
----
-
-## 🔧 Future Enhancements
-
-- Integration with live IoT sensors (DHT11, MQ135)  
-- Automated control system for fans and humidifiers  
-- SMS or WhatsApp alerts for farm owners  
-- Historical data visualization and analytics  
-
-
-## 💡 Inspiration
-
-This project was inspired by the need to bring **AI and IoT solutions** to small-scale agriculture, helping mushroom farmers monitor and maintain ideal growth conditions efficiently and sustainably.
+```text
+SmartMush/
+├── dashboard.py           # Main application (Streamlit)
+├── train_model.py         # Script to train the AI model
+├── simulate_data.py       # Generates synthetic training data
+├── test.py                # Unit tests for the system
+├── mushroom_ai_model.pkl  # Pre-trained AI model
+├── Dockerfile             # Docker configuration
+└── requirements.txt       # Python dependencies
