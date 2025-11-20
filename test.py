@@ -1,55 +1,39 @@
-import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score
+import unittest
 import joblib
+import pandas as pd
+import os
 
-# Load the dataset
-try:
-    df = pd.read_csv("mushroom_data.csv")
-except FileNotFoundError:
-    print("Error: 'mushroom_data.csv' not found.")
-    print("Please run 'simulate_data.py' first to generate the data.")
-    exit()
+class TestSmartMush(unittest.TestCase):
+    
+    @classmethod
+    def setUpClass(cls):
+        # Load model once for all tests
+        if os.path.exists('mushroom_ai_model.pkl'):
+            cls.model = joblib.load('mushroom_ai_model.pkl')
+        else:
+            raise FileNotFoundError("Model file missing. Run train_model.py first.")
 
-print("Data loaded successfully.")
+    def test_model_loading(self):
+        """Test if model loads correctly"""
+        self.assertIsNotNone(self.model)
 
-# --- Feature Engineering ---
-# In this simple case, our features are the raw sensor data.
-# The target is the 'condition' column.
+    def test_optimal_condition(self):
+        """Test a known optimal condition (20°C, 90% Humidity, 500 CO2)"""
+        input_data = pd.DataFrame([[20, 90, 500]], columns=['Temperature', 'Humidity', 'CO2_Level'])
+        prediction = self.model.predict(input_data)[0]
+        self.assertEqual(prediction, 1, "Should predict Optimal (1)")
 
-# Define features (X) and target (y)
-features = ['temperature', 'humidity', 'co2_level']
-target = 'condition'
+    def test_suboptimal_condition_hot(self):
+        """Test a known bad condition (High Temp)"""
+        input_data = pd.DataFrame([[35, 90, 500]], columns=['Temperature', 'Humidity', 'CO2_Level'])
+        prediction = self.model.predict(input_data)[0]
+        self.assertEqual(prediction, 0, "Should predict Suboptimal (0)")
 
-X = df[features]
-y = df[target]
+    def test_suboptimal_condition_dry(self):
+        """Test a known bad condition (Low Humidity)"""
+        input_data = pd.DataFrame([[20, 40, 500]], columns=['Temperature', 'Humidity', 'CO2_Level'])
+        prediction = self.model.predict(input_data)[0]
+        self.assertEqual(prediction, 0, "Should predict Suboptimal (0)")
 
-# Split data into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-print(f"Training model with {len(X_train)} samples...")
-
-# --- Model Training ---
-# We'll use a RandomForestClassifier, which is robust and works well.
-model = RandomForestClassifier(n_estimators=100, random_state=42)
-
-# Train the model
-model.fit(X_train, y_train)
-
-print("Model trained.")
-
-# --- Model Evaluation ---
-# Predict on the test set
-y_pred = model.predict(X_test)
-
-# Calculate accuracy
-accuracy = accuracy_score(y_test, y_pred)
-print(f"\nModel Accuracy on Test Data: {accuracy * 100:.2f}%")
-
-# --- Model Saving ---
-# Save the trained model to a file
-model_filename = "mushroom_ai_model.pkl"
-joblib.dump(model, model_filename)
-
-print(f"Model saved successfully as '{model_filename}'.")
+if __name__ == '__main__':
+    unittest.main()

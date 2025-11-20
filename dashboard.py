@@ -1,111 +1,230 @@
 import streamlit as st
-import pandas as pd
 import joblib
-import os
+import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
+from streamlit_lottie import st_lottie
+import requests
 
-# --- Page Configuration ---
+# --- 1. CONFIGURATION & SETUP ---
 st.set_page_config(
-    page_title="SmartMush Dashboard 🍄",
+    page_title="SmartMush AI",
     page_icon="🍄",
-    layout="centered",
-    initial_sidebar_state="auto"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
-# --- Model Loading ---
-MODEL_FILE = "mushroom_ai_model.pkl"
-
-@st.cache_resource
-def load_model(model_path):
-    """Loads the trained model from disk."""
-    if not os.path.exists(model_path):
-        return None
+# Function to load Lottie animations
+def load_lottieurl(url):
     try:
-        model = joblib.load(model_path)
-        return model
-    except Exception as e:
-        st.error(f"Error loading model: {e}")
+        r = requests.get(url)
+        if r.status_code != 200:
+            return None
+        return r.json()
+    except:
         return None
 
-model = load_model(MODEL_FILE)
+# Load Assets
+lottie_mushroom = load_lottieurl("https://lottie.host/5a609b25-150c-4858-9a65-16b38018ba22/2Q8s8F8F8F.json")
 
-# --- Main Application ---
-st.title("🍄 Smart Mushroom Farm Monitoring")
+# --- 2. THEME ENGINE ---
+# We place this at the top so it applies immediately
+with st.sidebar:
+    st.title("⚙️ Settings")
+    # The Switch
+    dark_mode = st.toggle("🌙 Dark Mode", value=True) 
 
-if model is None:
-    st.error(
-        f"**Model file not found!**\n\n"
-        f"Please make sure the file `{MODEL_FILE}` is in the same directory. "
-        f"You may need to run `train_model.py` first."
-    )
+# Define colors based on the switch
+if dark_mode:
+    theme_bg = "#0E1117"
+    theme_text = "#FAFAFA"
+    theme_card = "#262730"
+    theme_plot = "plotly_dark"
+    metric_text_color = "#FFFFFF"
 else:
-    st.markdown("""
-    Adjust the sliders below to simulate the current conditions in your mushroom farm. 
-    The AI will predict whether the environment is **optimal** or **suboptimal** for growth.
-    """)
+    theme_bg = "#FFFFFF"
+    theme_text = "#000000"
+    theme_card = "#F0F2F6"
+    theme_plot = "plotly_white"
+    metric_text_color = "#000000"
 
-    # --- Sidebar for Input ---
-    st.sidebar.header("Live Sensor Simulation")
+# Custom CSS Injection
+st.markdown(f"""
+    <style>
+    /* Main Background */
+    .stApp {{
+        background-color: {theme_bg};
+        color: {theme_text};
+    }}
     
-    # Sliders for user input
-    temp = st.sidebar.slider(
-        "🌡️ Temperature (°C)", 
-        min_value=10.0, 
-        max_value=40.0, 
-        value=22.5,  # Default optimal value
-        step=0.5
-    )
+    /* Sidebar Background (Optional override) */
+    [data-testid="stSidebar"] {{
+        background-color: {theme_card};
+    }}
+
+    /* Metric Cards */
+    .stMetric {{
+        background-color: {theme_card};
+        border-left: 5px solid #4CAF50;
+        padding: 10px;
+        border-radius: 5px;
+        color: {metric_text_color} !important;
+    }}
     
-    humidity = st.sidebar.slider(
-        "💧 Humidity (%)", 
-        min_value=50.0, 
-        max_value=100.0, 
-        value=90.0,  # Default optimal value
-        step=1.0
-    )
+    /* Force text colors for headers */
+    h1, h2, h3, p, span {{
+        color: {theme_text} !important;
+    }}
     
-    co2 = st.sidebar.slider(
-        "💨 CO₂ Level (ppm)", 
-        min_value=300.0, 
-        max_value=2000.0, 
-        value=600.0,  # Default optimal value
-        step=25.0
-    )
+    /* Toast Styling */
+    div[data-testid="stToast"] {{
+        background-color: #4CAF50;
+        color: white;
+    }}
+    </style>
+    """, unsafe_allow_html=True)
 
-    # --- Prediction ---
-    # Create a DataFrame from the inputs, matching the model's training format
-    input_data = pd.DataFrame(
-        [[temp, humidity, co2]],
-        columns=['temperature', 'humidity', 'co2_level']
-    )
+# --- 3. LOAD MODEL ---
+try:
+    model = joblib.load('mushroom_ai_model.pkl')
+except FileNotFoundError:
+    st.error("⚠️ Model missing! Please run `train_model.py` first.")
+    st.stop()
 
-    # Make prediction
-    prediction = model.predict(input_data)[0]
-    prediction_proba = model.predict_proba(input_data)
-
-    # --- Display Results ---
-    st.subheader("🤖 AI Prediction")
+# --- 4. SIDEBAR CONTROLS ---
+with st.sidebar:
+    st.divider()
+    st.title("🎛 Control Panel")
     
-    # Get the confidence score
-    confidence = prediction_proba.max() * 100
+    with st.container():
+        st.write("Adjust environmental sensors:")
+        temp = st.slider("Temperature (°C)", 10.0, 35.0, 22.0, 0.1)
+        humidity = st.slider("Humidity (%)", 30.0, 100.0, 85.0, 0.1)
+        co2 = st.slider("CO2 Level (ppm)", 300.0, 2000.0, 600.0, 10.0)
 
-    if prediction == "Optimal":
-        st.success(f"**✅ Optimal** (Confidence: {confidence:.2f}%)")
-        st.markdown(
-            "The current conditions are **ideal** for mushroom growth. "
-            "Keep maintaining this environment!"
-        )
+    st.divider()
+    st.markdown("### 🤖 System Logs")
+    st.code(f"Sensors Active...\nT={temp}°C | H={humidity}%", language="bash")
+
+# --- 5. MAIN PREDICTION LOGIC ---
+input_data = pd.DataFrame([[temp, humidity, co2]], columns=['Temperature', 'Humidity', 'CO2_Level'])
+prediction = model.predict(input_data)[0]
+proba = model.predict_proba(input_data)[0]
+confidence = proba[prediction] * 100
+
+# Dynamic Toast
+if prediction == 1:
+    st.toast('Conditions are OPTIMAL! 🍄', icon="✅")
+else:
+    st.toast('Warning: Conditions Suboptimal!', icon="⚠️")
+
+# --- 6. DASHBOARD LAYOUT ---
+
+col_header_1, col_header_2 = st.columns([3, 1])
+with col_header_1:
+    st.title("SmartMush: AI Farm Monitor")
+    st.markdown("### Intelligent Environmental Analysis System")
+    st.markdown("Dashboard monitoring real-time growth conditions for **Oyster Mushrooms**.")
+with col_header_2:
+    if lottie_mushroom:
+        st_lottie(lottie_mushroom, height=150, key="mushroom_anim")
     else:
-        st.error(f"**❌ Suboptimal** (Confidence: {confidence:.2f}%)")
-        st.markdown(
-            "The current conditions are **not ideal**. "
-            "One or more sensor values are outside the optimal range. "
-            "Please check your farm's controls."
-        )
+        st.image("https://cdn-icons-png.flaticon.com/512/2909/2909937.png", width=100)
 
-    # Display the current inputs in a clean table
-    st.subheader("Current Sensor Readings")
-    st.dataframe(input_data.style.format({
-        "temperature": "{:.1f} °C",
-        "humidity": "{:.0f} %",
-        "co2_level": "{:.0f} ppm"
-    }))
+st.divider()
+
+# Metrics Row
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    status_color = "normal" if prediction == 1 else "inverse"
+    label_text = "OPTIMAL" if prediction == 1 else "SUBOPTIMAL"
+    st.metric("Growth Status", label_text, delta="Stable" if prediction == 1 else "Needs Attention", delta_color=status_color)
+
+with col2:
+    # Gauge Chart with Theme Awareness
+    fig_gauge = go.Figure(go.Indicator(
+        mode = "gauge+number",
+        value = confidence,
+        domain = {'x': [0, 1], 'y': [0, 1]},
+        title = {'text': "AI Confidence"},
+        gauge = {
+            'axis': {'range': [0, 100]},
+            'bar': {'color': "#4CAF50" if prediction == 1 else "#FF5252"},
+            'steps': [{'range': [0, 50], 'color': "gray"},
+                      {'range': [50, 100], 'color': "white" if dark_mode else "lightgray"}]
+        }
+    ))
+    # Apply the theme logic
+    fig_gauge.update_layout(
+        height=150, 
+        margin=dict(l=10,r=10,t=30,b=10),
+        template=theme_plot, # SWITCHES PLOTLY THEME
+        paper_bgcolor="rgba(0,0,0,0)", # Transparent background
+        font={'color': theme_text}
+    )
+    st.plotly_chart(fig_gauge, use_container_width=True)
+
+with col3:
+    st.subheader("💡 AI Recommendation")
+    if prediction == 1:
+        st.success("System running perfectly.")
+        if confidence > 90:
+            st.balloons()
+    else:
+        if temp > 24: st.error("❄️ COOLING NEEDED: Temp is too high.")
+        elif temp < 18: st.warning("🔥 HEATING NEEDED: Temp is too low.")
+        if humidity < 80: st.info("💧 HUMIDIFIER: Increase moisture.")
+        if co2 > 1000: st.warning("💨 VENTILATION: CO2 levels critical.")
+
+st.divider()
+
+# --- 7. INTERACTIVE ANALYSIS CHART ---
+st.subheader("📊 3D Parameter Analysis")
+
+# Dummy Data Generation
+import numpy as np
+np.random.seed(42)
+demo_data = pd.DataFrame({
+    'Temperature': np.random.uniform(10, 35, 100),
+    'Humidity': np.random.uniform(30, 100, 100),
+    'Status': np.random.choice(['Historical', 'Historical'], 100)
+})
+
+current_point = pd.DataFrame({
+    'Temperature': [temp],
+    'Humidity': [humidity],
+    'Status': ['CURRENT READING']
+})
+chart_data = pd.concat([demo_data, current_point])
+
+fig = px.scatter(
+    chart_data, 
+    x="Temperature", 
+    y="Humidity", 
+    color="Status",
+    size="Temperature",
+    color_discrete_map={'CURRENT READING': 'red', 'Historical': '#00B4D8'},
+    title="Environmental Sweet Spot Analysis"
+)
+
+fig.add_shape(type="rect",
+    x0=18, y0=80, x1=24, y1=100,
+    line=dict(color="Green"),
+    fillcolor="lightgreen",
+    opacity=0.2,
+    layer="below"
+)
+
+# Apply the theme logic here too
+fig.update_layout(
+    template=theme_plot, # SWITCHES PLOTLY THEME
+    plot_bgcolor="rgba(0,0,0,0)",
+    paper_bgcolor="rgba(0,0,0,0)",
+    font={'color': theme_text},
+    hovermode="x unified"
+)
+
+st.plotly_chart(fig, use_container_width=True)
+
+st.caption("SmartMush System v1.0")

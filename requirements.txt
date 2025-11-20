@@ -1,4 +1,7 @@
-streamlit
-joblib
-pandas
-scikit-learn
+streamlit==1.50.0
+pandas==2.3.2
+scikit-learn==1.7.2
+joblib==1.5.2
+plotly==6.5.0
+streamlit-lottie==0.0.5
+requests==2.32.5
